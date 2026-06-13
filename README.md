@@ -2,13 +2,17 @@
 
 A conversational AI assistant that helps students and researchers upload, explore, verify, and interact with academic papers through natural language conversations.
 
-ResearchPilot combines Agentic Retrieval-Augmented Generation (RAG), web search, claim verification, and multi-source document ingestion to provide accurate, context-aware answers grounded in research papers and current information.
+## 🚀 Live Demo
+
+**Try ResearchPilot Online:**
+
+https://researchpilot-agentic-rag-chatbot-production-4bce.up.railway.app/
 
 ---
 
 ## Overview
 
-ResearchPilot is an Agentic RAG application built with LangGraph, LangChain, Streamlit, and Qdrant.
+ResearchPilot is an Agentic Retrieval-Augmented Generation (RAG) application built with LangGraph, LangChain, Streamlit, and Qdrant.
 
 Users can upload research papers from PDFs, web URLs, or ArXiv, then ask questions about them in a conversational interface. The system intelligently decides whether to:
 
@@ -21,17 +25,21 @@ The goal is to help users understand complex papers faster, validate research fi
 
 ---
 
-## Demo
+## ✨ Key Highlights
 
-Add screenshots or a GIF here.
-
-```markdown
-![Demo](assets/demo.gif)
-```
+* Agentic RAG workflow powered by LangGraph
+* Multi-source document ingestion
+* Session-isolated vector databases
+* Claim verification against current research
+* Web-assisted knowledge discovery
+* Streaming responses
+* Automated evaluation using DeepEval
+* Multi-session support
+* Dockerized deployment
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```text
 User
@@ -50,7 +58,7 @@ LangGraph Agent
  │     ├── Retrieval
  │     └── Reranking
  │
- ├── Web Search (Tavily)
+ ├── Tavily Search
  │
  ├── Claim Verification
  │     ├── Web Search
@@ -61,7 +69,7 @@ LangGraph Agent
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 ### AI & Agent Frameworks
 
@@ -90,6 +98,7 @@ LangGraph Agent
 ### Deployment
 
 * Docker
+* Railway
 
 ### Language
 
@@ -97,21 +106,7 @@ LangGraph Agent
 
 ---
 
-## Key Highlights
-
-* Agentic RAG workflow powered by LangGraph
-* Multi-source document ingestion
-* Session-isolated vector databases
-* Claim verification against current research
-* Web-assisted knowledge discovery
-* Streaming responses
-* Automated evaluation using DeepEval
-* Multi-session support
-* Dockerized deployment
-
----
-
-## Target Users
+## 🎯 Target Users
 
 ### Students
 
@@ -131,7 +126,7 @@ Interact with documents using natural language instead of manual searching.
 
 ---
 
-## Features
+## 🚀 Features
 
 | Feature                | Description                                                                                 |
 | ---------------------- | ------------------------------------------------------------------------------------------- |
@@ -149,7 +144,7 @@ Interact with documents using natural language instead of manual searching.
 
 ---
 
-## Supported Document Sources
+## 📚 Supported Document Sources
 
 ### File Uploads
 
@@ -165,7 +160,7 @@ Interact with documents using natural language instead of manual searching.
 
 ---
 
-## Useful Commands
+## ⚙️ Installation
 
 ### Clone Repository
 
@@ -192,13 +187,17 @@ uv run streamlit run app.py
 uv run python -m backend.<module_name>
 ```
 
-### Build Docker Image
+---
+
+## 🐳 Docker Setup
+
+### Build Image
 
 ```bash
 docker build -t research-pilot .
 ```
 
-### Run Docker Container
+### Run Container
 
 ```bash
 docker run -p 8501:8501 --env-file .env research-pilot
@@ -206,21 +205,21 @@ docker run -p 8501:8501 --env-file .env research-pilot
 
 ---
 
-## Environment Variables
+## 🔑 Environment Variables
 
 Create a `.env` file:
 
 ```env
-OPENAI_API_KEY=your_key
-TAVILY_API_KEY=your_key
+OPENAI_API_KEY=
+TAVILY_API_KEY=
 
-QDRANT_URL=your_url
-QDRANT_API_KEY=your_key
+QDRANT_URL=
+QDRANT_API_KEY=
 ```
 
 ---
 
-## How ResearchPilot Works
+## 🔄 How ResearchPilot Works
 
 ### 1. Document Ingestion
 
@@ -230,24 +229,24 @@ Users upload documents from:
 * URLs
 * ArXiv
 
-The documents are parsed, chunked, embedded, and stored in Qdrant.
+Documents are parsed, chunked, embedded, and stored in Qdrant.
 
-### 2. Query Understanding
+### 2. Intelligent Query Routing
 
-The agent analyzes the query and determines whether it requires:
+The agent analyzes user intent and decides whether the query requires:
 
 * Retrieval
 * Web search
 * Claim verification
 * Direct answering
 
-### 3. Retrieval
+### 3. Retrieval & Reranking
 
-Relevant chunks are retrieved from the session-specific vector database.
+Relevant chunks are retrieved and reranked before generation.
 
-### 4. Validation
+### 4. Claim Verification
 
-Retrieved content is evaluated for relevance and reranked before response generation.
+Research claims are checked against current web sources and recent academic publications.
 
 ### 5. Response Generation
 
@@ -255,7 +254,7 @@ The final answer is generated using retrieved evidence and conversational histor
 
 ---
 
-## Production Optimizations
+## ⚡ Production Optimizations
 
 | Optimization                | Details                                                                 |
 | --------------------------- | ----------------------------------------------------------------------- |
@@ -266,11 +265,11 @@ The final answer is generated using retrieved evidence and conversational histor
 | Session Persistence         | Conversations survive application restarts                              |
 | Temporary File Cleanup      | Uploaded files are automatically removed after processing               |
 | Async Evaluation            | Controlled concurrency to avoid rate-limit issues                       |
-| Reliable ArXiv Verification | Uses targeted searches rather than unstable library dependencies        |
+| Reliable ArXiv Verification | Uses targeted searches instead of unstable library dependencies         |
 
 ---
 
-## Design Constraints
+## 📏 Design Constraints
 
 | Constraint                     | Reason                                                                |
 | ------------------------------ | --------------------------------------------------------------------- |
@@ -284,25 +283,19 @@ The final answer is generated using retrieved evidence and conversational histor
 
 ---
 
-## Evaluation
+## 📊 Evaluation
 
 ResearchPilot includes an automated RAG evaluation pipeline powered by DeepEval.
 
-### Evaluation Metrics
+### Metrics
 
-| Metric               | Purpose                                 |
-| -------------------- | --------------------------------------- |
-| Contextual Precision | Measures retrieval accuracy             |
-| Contextual Recall    | Measures retrieval coverage             |
-| Contextual Relevancy | Measures relevance of retrieved context |
-| Answer Relevancy     | Measures answer quality                 |
-| Faithfulness         | Detects hallucinations                  |
-
-### Threshold
-
-```text
-0.7
-```
+| Metric               | What It Measures        |
+| -------------------- | ----------------------- |
+| Contextual Precision | Retrieval accuracy      |
+| Contextual Recall    | Retrieval coverage      |
+| Contextual Relevancy | Context relevance       |
+| Answer Relevancy     | Answer quality          |
+| Faithfulness         | Hallucination detection |
 
 ### Run Evaluation
 
@@ -320,18 +313,7 @@ uv run python evaluate.py
 
 ---
 
-## Performance Characteristics
-
-* Session-isolated vector databases
-* Cached embeddings reduce redundant API calls
-* Streaming responses improve user experience
-* Automated evaluation using five quality metrics
-* Multi-source ingestion pipeline
-* Real-time claim verification and knowledge discovery
-
----
-
-## Future Improvements
+## 📈 Future Improvements
 
 * Hybrid Retrieval (BM25 + Vector Search)
 * Multi-Agent Research Workflows
@@ -344,7 +326,7 @@ uv run python evaluate.py
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
 ```text
 ResearchPilot/
@@ -358,19 +340,12 @@ ResearchPilot/
 ├── eval_results.json
 ├── goldens.json
 ├── Dockerfile
-├── requirements.txt
-└── README.md
+├── README.md
 ```
 
 ---
 
-## License
-
-This project is licensed under the MIT License.
-
----
-
-## Author
+## 👨‍💻 Author
 
 **Sumit Kumar**
 
