@@ -12,8 +12,46 @@ from backend.btw_handler import handle_btw
 from backend.paper_loader import load_arxiv, load_document, load_webpage
 from backend.rag_graph import build_graph
 from backend.vector_store import add_paper, list_papers
+import sqlite3
 
 st.set_page_config(page_title="Papeer", page_icon="📚", layout="centered")
+
+import sqlite3
+
+
+def delete_langgraph_thread(
+    session_id: str,
+    db_path: str = "checkpoints.db",
+):
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Delete checkpoint snapshots
+        cursor.execute(
+            """
+            DELETE FROM checkpoints
+            WHERE thread_id = ?
+            """,
+            (session_id,),
+        )
+
+        # Delete channel writes
+        cursor.execute(
+            """
+            DELETE FROM writes
+            WHERE thread_id = ?
+            """,
+            (session_id,),
+        )
+
+        conn.commit()
+        conn.close()
+
+    except Exception as e:
+        print(
+            f"Failed to delete LangGraph thread {session_id}: {e}"
+        )
 
 
 @st.cache_resource
@@ -103,6 +141,48 @@ def create_session() -> str:
     st.session_state.turns[sid] = 0
     return sid
 
+def delete_session(session_id: str) -> None:
+
+    # Delete LangGraph persisted state
+    delete_langgraph_thread(session_id)
+
+    # Delete UI/session metadata
+    st.session_state.sessions_meta.pop(
+        session_id,
+        None,
+    )
+
+    st.session_state.chats.pop(
+        session_id,
+        None,
+    )
+
+    st.session_state.turns.pop(
+        session_id,
+        None,
+    )
+
+    save_sessions(
+        st.session_state.sessions_meta
+    )
+
+    # Handle active session deletion
+    if session_id == st.session_state.active_session_id:
+
+        if st.session_state.sessions_meta:
+
+            latest = max(
+                st.session_state.sessions_meta.values(),
+                key=lambda s: s["created_at"],
+            )
+
+            st.session_state.active_session_id = latest["id"]
+
+        else:
+
+            new_sid = create_session()
+
+            st.session_state.active_session_id = new_sid
 
 def load_session_chats(session_id: str) -> list[dict]:
     config = {"configurable": {"thread_id": session_id}}
@@ -175,15 +255,63 @@ with st.sidebar:
         sid = session["id"]
         is_active = sid == st.session_state.active_session_id
         btn_type = "primary" if is_active else "secondary"
-        if st.button(
-            session["name"],
-            key=f"sess_{sid}",
-            use_container_width=True,
-            type=btn_type,
-        ):
-            if not is_active:
-                switch_session(sid)
-                st.rerun()
+
+        col1, col2 = st.columns([6, 1])
+
+        with col1:
+            if st.button(
+                session["name"],
+                key=f"sess_{sid}",
+                use_container_width=True,
+                type=btn_type,
+            ):
+                if not is_active:
+                    switch_session(sid)
+                    st.rerun()
+
+        with col2:
+            if st.button(
+                "🗑️",
+                key=f"delete_{sid}",
+                use_container_width=True,
+            ):
+                st.session_state[f"confirm_delete_{sid}"] = True
+
+        if st.session_state.get(f"confirm_delete_{sid}", False):
+
+            st.warning(
+                f"Delete '{session['name']}'?"
+            )
+
+            c1, c2 = st.columns(2)
+
+            with c1:
+                if st.button(
+                    "Yes",
+                    key=f"yes_delete_{sid}",
+                    use_container_width=True,
+                ):
+                    delete_session(sid)
+
+                    st.session_state.pop(
+                        f"confirm_delete_{sid}",
+                        None,
+                    )
+
+                    st.rerun()
+
+            with c2:
+                if st.button(
+                    "No",
+                    key=f"no_delete_{sid}",
+                    use_container_width=True,
+                ):
+                    st.session_state.pop(
+                        f"confirm_delete_{sid}",
+                        None,
+                    )
+
+                    st.rerun()
 
     st.divider()
     st.markdown("## 📄 Documents")
