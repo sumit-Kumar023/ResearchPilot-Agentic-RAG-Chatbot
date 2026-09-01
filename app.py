@@ -42,10 +42,32 @@ p, span, div, li, td, th, label {
     font-size: 15px !important;
 }
 
-/* Hide Streamlit chrome */
-#MainMenu, footer, header { visibility: hidden; }
+/* Hide Streamlit chrome (but keep the sidebar reopen control working) */
+#MainMenu, footer { visibility: hidden; }
 [data-testid="stDecoration"] { display: none; }
 .stDeployButton { display: none; }
+
+/* Keep header transparent instead of hiding it outright — the header
+   element also contains the "reopen sidebar" arrow, and
+   visibility: hidden on the whole header hides that control too. */
+[data-testid="stHeader"] {
+    background: transparent !important;
+    height: auto !important;
+}
+
+/* Make sure the collapsed-sidebar control is always visible and
+   styled to match the dark theme */
+[data-testid="stSidebarCollapsedControl"] {
+    visibility: visible !important;
+    display: flex !important;
+    z-index: 999999 !important;
+}
+[data-testid="stSidebarCollapsedControl"] button {
+    color: #F0EEF8 !important;
+}
+[data-testid="stSidebarCollapsedControl"] svg {
+    fill: #F0EEF8 !important;
+}
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
