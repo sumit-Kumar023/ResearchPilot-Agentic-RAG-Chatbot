@@ -69,6 +69,10 @@ LangGraph Agent
 
 ---
 
+#### Graph
+<img width="581" height="579" alt="graph" src="https://github.com/user-attachments/assets/cc500ccc-3fe7-4c36-9151-b12992ed8023" />
+
+
 ## 🛠️ Tech Stack
 
 ### AI & Agent Frameworks
