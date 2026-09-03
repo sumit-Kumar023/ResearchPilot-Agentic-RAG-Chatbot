@@ -2,7 +2,10 @@ import re
 import tempfile
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
+import requests
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 
 from langchain_community.document_loaders import PyMuPDFLoader, TextLoader, WebBaseLoader
 from langchain_core.documents import Document
@@ -28,25 +31,57 @@ def _stamp_title(docs: list[Document], title: str) -> list[Document]:
 
 
 def load_pdf(file_path: str) -> list[Document]:
-    docs = PyMuPDFLoader(file_path).load()
-    return _stamp_title(_splitter.split_documents(docs), Path(file_path).stem)
-
+    try:
+        docs = PyMuPDFLoader(file_path).load()
+        return _stamp_title(_splitter.split_documents(docs), Path(file_path).stem)
+    except FileNotFoundError:
+        print(f"PDF file not found: {file_path}")
+        raise
+    except Exception as e:
+        print(f"Failed to load PDF '{file_path}': {e}")
+        raise
 
 def load_text(file_path: str) -> list[Document]:
-    docs = TextLoader(file_path, encoding="utf-8").load()
-    return _stamp_title(_splitter.split_documents(docs), Path(file_path).stem)
+    try:
+        docs = TextLoader(file_path, encoding="utf-8").load()
+        return _stamp_title(_splitter.split_documents(docs), Path(file_path).stem)
+    except FileNotFoundError:
+        print(f"Text file is not available: {file_path}")
+        raise
+    except Exception as e:
+        print(f"Failed to load text file '{file_path}': {e}")
+        raise
 
 
 def load_markdown(file_path: str) -> list[Document]:
-    docs = TextLoader(file_path, encoding="utf-8").load()
-    return _stamp_title(_md_splitter.split_documents(docs), Path(file_path).stem)
+    try:
+        docs = TextLoader(file_path, encoding="utf-8").load()
+        return _stamp_title(_md_splitter.split_documents(docs), Path(file_path).stem)
+    except FileNotFoundError:
+        print(f"Markdown file is not available: {file_path}")
+        raise
+    except Exception as e:
+        print(f"Unable to load markdown file '{file_path}': {e}")
+        raise
 
 
 def load_webpage(url: str) -> list[Document]:
-    docs = WebBaseLoader(url, requests_kwargs={"timeout": 30}).load()
-    title = (docs[0].metadata.get("title") or url) if docs else url
-    return _stamp_title(_splitter.split_documents(docs), title)
-
+    try:
+        docs = WebBaseLoader(url, requests_kwargs={"timeout": 30}).load()
+        title = (docs[0].metadata.get("title") or url) if docs else url
+        return _stamp_title(_splitter.split_documents(docs), title)
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP Error while loading webpage: {url} - {e}")
+        raise
+    except requests.exceptions.Timeout as e:
+        print(f"Request timed out while loading webpages: {url} - {e}")
+        raise
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed while loading webpage: {url} - {e}")
+        raise
+    except Exception:
+        print(f"Failed to load webpage: {url}")
+        raise
 
 def _extract_arxiv_id(query: str) -> str | None:
     """Return bare ArXiv ID (no version suffix) if one appears in the query."""
@@ -59,10 +94,41 @@ def _extract_arxiv_id(query: str) -> str | None:
 def _arxiv_api_lookup(arxiv_id: str) -> str:
     """Fetch paper title by ID from the ArXiv Atom API."""
     url = f"https://export.arxiv.org/api/query?id_list={arxiv_id}"
-    with urllib.request.urlopen(url, timeout=10) as resp:
-        xml = resp.read().decode()
-    titles = re.findall(r"<title>(.*?)</title>", xml, re.DOTALL)
-    return titles[1].strip() if len(titles) > 1 else arxiv_id
+
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            xml = resp.read()
+
+        root = ET.fromstring(xml)
+
+        namespace = {"atom": "http://www.w3.org/2005/Atom"}
+        entry = root.find("atom:entry", namespace)
+
+        if entry is None:
+            return arxiv_id
+
+        title = entry.find("atom:title", namespace)
+
+        if title is not None and title.text:
+            return " ".join(title.text.split())
+
+        return arxiv_id
+
+    except HTTPError as e:
+        print(f"ArXiv API HTTP error: {e.code} {e.reason}")
+        raise
+
+    except URLError as e:
+        print(f"ArXiv API connection error: {e.reason}")
+        raise
+
+    except ET.ParseError:
+        print("Failed to parse ArXiv API XML response")
+        raise
+
+    except Exception:
+        print("Failed to fetch paper title from the ArXiv Atom API")
+        raise
 
 
 def _arxiv_search(query: str) -> str:
@@ -101,6 +167,7 @@ def _load_arxiv_by_id(arxiv_id: str) -> list[Document]:
 def load_arxiv(query: str) -> list[Document]:
     arxiv_id = _extract_arxiv_id(query) or _arxiv_search(query)
     return _load_arxiv_by_id(arxiv_id)
+    
 
 
 def load_document(source: str) -> list[Document]:
